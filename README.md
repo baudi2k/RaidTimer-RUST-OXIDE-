@@ -1,32 +1,24 @@
 # RaidTimer Plugin para Rust
 
-**Versión**: 3.0
+**Versión**: 3.1
 **Autor**: ChatGPT para usuario Rust
 **Compatibilidad**: Oxide/uMod
 
 ## 🚀 Descripción
 
-**RaidTimer** es un plugin avanzado para servidores Rust que permite organizar eventos de raideo de forma estructurada y segura. Ofrece:
-
-* Selección de jugadores mediante GUI
-* Zona de raideo personalizada
-* Temporizador configurable
-* HUD con cuenta regresiva
-* Protección de zona tras el evento
-
-Ideal para servidores PvP organizados, torneos o eventos especiales.
+**RaidTimer** es un plugin para Rust que organiza eventos de raideo con detección automática de bases, zona protegida y una GUI intuitiva. La versión 3.1 introduce mejoras clave para automatizar y simplificar el proceso.
 
 ---
 
 ## ⚖️ Características
 
-* `/raidstart` abre un menú para elegir jugadores participantes.
-* `/raidmark` permite marcar el centro de la zona de raideo.
-* GUI para ingresar radio de protección (5m a 100m).
-* GUI para definir tiempo de raideo en segundos.
-* Temporizador visible en pantalla para jugadores seleccionados.
-* Prevención de daño en la zona cuando finaliza el raideo.
-* Comando `/raidstop` para cancelar el evento (requiere permiso).
+* Detección automática de la base mediante el Tool Cupboard más cercano.
+* Cálculo automático del centro y radio de la zona de raideo.
+* Selección de jugadores mediante GUI simplificada.
+* Ingreso de tiempo de raideo mediante GUI.
+* HUD visible con temporizador para jugadores seleccionados.
+* Zona protegida al finalizar el raideo (sin daños).
+* Cancelación de raideo por administradores.
 
 ---
 
@@ -50,24 +42,23 @@ oxide.grant user <steamID> raidtimer.admin
 
 ```text
 /raidstart   # Inicia la selección de jugadores
-/raidmark    # Marca la zona de raideo
+/raidmark    # Detecta automáticamente la base (TC)
 /raidstop    # Detiene el raideo (admin)
 ```
 
-### Consola interna (no necesarias para jugadores)
+### Consola interna
 
-* `raid.addplayer <id>` – Agrega jugador a la lista
-* `raid.asktime` – Abre GUI de tiempo
-* `raid.setradius <float>` – Establece radio de protección
-* `raid.startinput <segundos>` – Inicia raideo con tiempo
-* `raid.close <panel>` – Cierra UI especificada
+* `raid.addplayer <id>`
+* `raid.asktime`
+* `raid.startinput <segundos>`
+* `raid.close <panel>`
 
 ---
 
 ## 🛠️ Instalación
 
-1. Coloca el archivo `RaidTimer.cs` en la carpeta `oxide/plugins` de tu servidor Rust.
-2. Reinicia el servidor o usa el comando:
+1. Coloca `RaidTimer.cs` en la carpeta `oxide/plugins`.
+2. Usa el comando:
 
 ```bash
 oxide.reload RaidTimer
@@ -75,26 +66,26 @@ oxide.reload RaidTimer
 
 ---
 
-## 🚧 Recomendaciones
+## 🚧 Notas
 
-* Usar este plugin para eventos organizados.
-* No iniciar un raideo sin marcar la zona.
-* Limitar a máximo 8 jugadores por evento para evitar sobrecarga en GUI.
+* El sistema detecta automáticamente la base con bloques asociados al Tool Cupboard.
+* La zona se marca con el centro y radio exactos de la construcción.
+* Si no se encuentra un TC válido, no se podrá iniciar el raideo.
 
 ---
 
 ## 🌐 Crédito
 
-Desarrollado por ChatGPT a solicitud de un usuario de servidores Rust. Adaptado para facilitar eventos PvP con mecánicas justas y controladas.
+Desarrollado por ChatGPT según las necesidades de usuarios de servidores Rust. Esta versión automatiza el proceso de selección de zonas para facilitar eventos justos y rápidos.
 
 ---
 
 ## 📁 Archivos
 
-* `RaidTimer.cs`: Código fuente del plugin
+* `RaidTimer.cs`: Plugin principal
 
 ---
 
 ## 🔧 Licencia
 
-Este proyecto se distribuye con fines educativos y puede ser modificado libremente para uso en servidores Rust.
+Uso libre con fines educativos o comunitarios en servidores Rust.
