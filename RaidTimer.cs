@@ -1,16 +1,17 @@
-// Plugin: RaidTimer 3.0 - Raideo con zona protegida, tiempo personalizado y GUI de selección
-// Autor: ChatGPT para usuario Rust
+// Plugin: RaidTimer 3.1 - Raideo con detección automática de base y GUI simplificada
+// Autor: ChatGPT para usuario Rust  (versión con detección automática de radio)
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Oxide.Core;
 using Oxide.Game.Rust.Cui;
 using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("RaidTimer", "TuNombre", "3.0.0")]
-    [Description("Temporizador de raideo con zona protegida, GUI de selección y tiempo personalizado")]
+    [Info("RaidTimer", "TuNombre", "3.1.0")]
+    [Description("Temporizador de raideo con detección automática de base, zona protegida y GUI de selección")]
 
     public class RaidTimer : RustPlugin
     {
@@ -39,9 +40,41 @@ namespace Oxide.Plugins
                 return;
             }
 
-            raidCenter = player.transform.position;
-            ShowRadiusInputGUI(player);
-            SendReply(player, "✅ Zona marcada. Ahora elige el radio.");
+            // Detección automática de base mediante Tool Cupboard
+            var tc = GetNearestTC(player.transform.position);
+            if (tc == null)
+            {
+                SendReply(player, "⚠️ No se encontró ningún Tool Cupboard cerca.");
+                return;
+            }
+
+            var building = tc.GetBuilding();
+            if (building?.buildingBlocks == null || building.buildingBlocks.Count == 0)
+            {
+                SendReply(player, "⚠️ El TC no tiene bloques asociados.");
+                return;
+            }
+
+            Bounds bounds = new Bounds(tc.transform.position, Vector3.zero);
+            foreach (var block in building.buildingBlocks)
+            {
+                if (block != null)
+                    bounds.Encapsulate(block.transform.position);
+            }
+
+            raidCenter = bounds.center;
+            raidRadius = Mathf.Max(bounds.extents.magnitude, 5f); // mínimo 5 m
+            SendReply(player, $"✅ Base detectada. Centro: {raidCenter}. Radio: {raidRadius:F1} m.");
+        }
+
+        /// <summary>Obtiene el Tool Cupboard más cercano en 30 m.</summary>
+        private BuildingPrivlidge GetNearestTC(Vector3 pos)
+        {
+            return BaseNetworkable.serverEntities
+                .OfType<BuildingPrivlidge>()
+                .Where(tc => Vector3.Distance(pos, tc.transform.position) < 30f)
+                .OrderBy(tc => Vector3.Distance(pos, tc.transform.position))
+                .FirstOrDefault();
         }
 
         private void ShowPlayerSelectionGUI(BasePlayer player)
@@ -86,10 +119,7 @@ namespace Oxide.Plugins
         private void CmdAskTime(ConsoleSystem.Arg arg)
         {
             BasePlayer player = arg.Player();
-            if (player == null)
-            {
-                return;
-            }
+            if (player == null) return;
 
             if (raidCenter == Vector3.zero)
             {
@@ -174,34 +204,6 @@ namespace Oxide.Plugins
             return null;
         }
 
-        private void ShowRadiusInputGUI(BasePlayer player)
-        {
-            CuiHelper.DestroyUi(player, "RadiusInput");
-            var container = new CuiElementContainer();
-            string panel = container.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.95" }, RectTransform = { AnchorMin = "0.4 0.4", AnchorMax = "0.6 0.6" }, CursorEnabled = true }, "Overlay", "RadiusInput");
-            container.Add(new CuiLabel { Text = { Text = "Ingresa el radio de la zona (metros):", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }, RectTransform = { AnchorMin = "0.1 0.7", AnchorMax = "0.9 0.9" } }, panel);
-            container.Add(new CuiElement
-            {
-                Parent = panel,
-                Components =
-                {
-                    new CuiInputFieldComponent { Text = "", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1", Command = "raid.setradius" },
-                    new CuiRectTransformComponent { AnchorMin = "0.1 0.3", AnchorMax = "0.9 0.5" }
-                }
-            });
-            container.Add(new CuiButton { Button = { Command = "raid.close RadiusInput", Color = "0.8 0.3 0.3 0.8" }, Text = { Text = "Cerrar", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }, RectTransform = { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.2" } }, panel);
-            CuiHelper.AddUi(player, container);
-        }
-
-        [ConsoleCommand("raid.setradius")]
-        private void CmdSetRadius(ConsoleSystem.Arg arg)
-        {
-            BasePlayer player = arg.Player();
-            if (arg.Args.Length == 0 || !float.TryParse(arg.Args[0], out float r)) return;
-            raidRadius = Mathf.Clamp(r, 5f, 100f);
-            SendReply(player, $"✅ Radio establecido: {raidRadius} metros.");
-        }
-
         [ConsoleCommand("raid.close")]
         private void CmdClose(ConsoleSystem.Arg arg)
         {
@@ -239,7 +241,7 @@ namespace Oxide.Plugins
             raidActive = false;
             raidTimer?.Destroy();
             remainingTime = 0;
-            UpdateHUD(); // Limpia el HUD
+            UpdateHUD(); // Limpia HUD
             PrintToChat("❌ Raideo cancelado por admin.");
         }
     }
